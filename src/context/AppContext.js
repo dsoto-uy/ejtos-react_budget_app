@@ -9,14 +9,14 @@ export const AppReducer = (state, action) => {
             total_budget = state.expenses.reduce(
                 (previousExp, currentExp) => {
                     return previousExp + currentExp.cost
-                },0
+                }, 0
             );
             total_budget = total_budget + action.payload.cost;
             action.type = "DONE";
-            if(total_budget <= state.budget) {
+            if (total_budget <= state.budget) {
                 total_budget = 0;
-                state.expenses.map((currentExp)=> {
-                    if(currentExp.name === action.payload.name) {
+                state.expenses.map((currentExp) => {
+                    if (currentExp.name === action.payload.name) {
                         currentExp.cost = action.payload.cost + currentExp.cost;
                     }
                     return currentExp
@@ -30,25 +30,25 @@ export const AppReducer = (state, action) => {
                     ...state
                 }
             }
-            case 'RED_EXPENSE':
-                const red_expenses = state.expenses.map((currentExp)=> {
-                    if (currentExp.name === action.payload.name && currentExp.cost - action.payload.cost >= 0) {
-                        currentExp.cost =  currentExp.cost - action.payload.cost;
-                        budget = state.budget + action.payload.cost
-                    }
-                    return currentExp
-                })
-                action.type = "DONE";
-                return {
-                    ...state,
-                    expenses: [...red_expenses],
-                };
-            case 'DELETE_EXPENSE':
+        case 'RED_EXPENSE':
+            const red_expenses = state.expenses.map((currentExp) => {
+                if (currentExp.name === action.payload.name && currentExp.cost - action.payload.cost >= 0) {
+                    currentExp.cost = currentExp.cost - action.payload.cost;
+                    budget = state.budget + action.payload.cost
+                }
+                return currentExp
+            })
             action.type = "DONE";
-            state.expenses.map((currentExp)=> {
+            return {
+                ...state,
+                expenses: [...red_expenses],
+            };
+        case 'DELETE_EXPENSE':
+            action.type = "DONE";
+            state.expenses.map((currentExp) => {
                 if (currentExp.name === action.payload) {
                     budget = state.budget + currentExp.cost
-                    currentExp.cost =  0;
+                    currentExp.cost = 0;
                 }
                 return currentExp
             })
@@ -59,14 +59,30 @@ export const AppReducer = (state, action) => {
             };
         case 'SET_BUDGET':
             action.type = "DONE";
-            state.budget = action.payload;
-
-            return {
-                ...state,
+            state.budget = (action.payload >= 0 && action.payload <= 20000) ? action.payload : state.budget;
+            if (action.payload <= 20000) {
+                const totalExpenses = state.expenses.reduce((total, item) => {
+                    return (total += item.cost);
+                }, 0);
+                if (action.payload < totalExpenses) {
+                    alert("Budget cannot be lower than the expenses");
+                    state.budget = totalExpenses;
+                } else {
+                    return {
+                        ...state
+                    };
+                }
+            }
+            else {
+                alert("Budget Limit Reached");
+                return {
+                    ...state
+                }
             };
+            break;
         case 'CHG_CURRENCY':
             action.type = "DONE";
-            state.currency = action.payload;
+            state.currency.symbol = action.payload;
             return {
                 ...state
             }
@@ -86,7 +102,7 @@ const initialState = {
         { id: "Human Resource", name: 'Human Resource', cost: 40 },
         { id: "IT", name: 'IT', cost: 500 },
     ],
-    currency: '£'
+    currency: {symbol:'£',name:"Pound"}
 };
 
 // 2. Creates the context this is the thing our components import and use to get the state
@@ -100,7 +116,7 @@ export const AppProvider = (props) => {
     let remaining = 0;
 
     if (state.expenses) {
-            const totalExpenses = state.expenses.reduce((total, item) => {
+        const totalExpenses = state.expenses.reduce((total, item) => {
             return (total = total + item.cost);
         }, 0);
         remaining = state.budget - totalExpenses;
